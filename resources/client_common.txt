@@ -1,0 +1,14 @@
+client
+dev game
+dev-type tun
+
+remote {server_host} {server_port}
+nobind
+
+dev tun
+persist-key
+persist-tun
+comp-lzo
+
+cipher AES-128-CBC
+verb 3
