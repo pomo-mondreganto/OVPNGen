@@ -1,13 +1,14 @@
 client
+dev game
+dev-type tun
+
 remote {server_host} {server_port}
-proto tcp-client
 nobind
 
 dev tun
 persist-key
 persist-tun
-
-ns-cert-type server
+comp-lzo
 
 cipher AES-128-CBC
 verb 3
