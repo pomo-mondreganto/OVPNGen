@@ -23,6 +23,9 @@ key-direction 0
 
 mode server
 push "topology subnet"
+push "route 10.60.0.0 255.255.0.0"
+push "route 10.70.0.0 255.255.0.0"
+push "route 10.10.10.0 255.255.255.0"
 push "route-gateway 10.{net}.{server_num}.1"
 ifconfig 10.{net}.{server_num}.1 255.255.255.0
 ifconfig-pool 10.{net}.{server_num}.3 10.{net}.{server_num}.253
