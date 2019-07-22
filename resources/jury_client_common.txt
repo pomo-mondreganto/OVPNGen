@@ -5,7 +5,7 @@ dev-type tun
 
 remote {server_host} {server_port}
 
-ifconfig 10.{net}.{client_num}.2 10.{net}.{client_num}.1
+ifconfig 10.10.10.10 10.10.10.1
 route 10.60.0.0 255.255.0.0
 route 10.70.0.0 255.255.0.0
 route 10.10.10.0 255.255.255.0

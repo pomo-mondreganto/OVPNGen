@@ -1,4 +1,5 @@
 client
+
 dev game
 dev-type tun
 
@@ -8,7 +9,28 @@ nobind
 dev tun
 persist-key
 persist-tun
-comp-lzo
 
 cipher AES-128-CBC
 verb 3
+
+remote-cert-tls server
+tls-client
+key-direction 1
+
+pull
+
+<ca>
+{ca_cert_dump}
+</ca>
+
+<cert>
+{client_cert}
+</cert>
+
+<key>
+{client_key}
+</key>
+
+<tls-auth>
+{tls_auth}
+</tls-auth>

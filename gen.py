@@ -6,147 +6,164 @@ import crypto_utils
 import argparse
 
 from auxiliary import format_number
+import config
 
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-RESOURCES = os.path.join(BASE_DIR, 'resources')
-RESULT_DIR = os.path.join(BASE_DIR, 'result')
-
-SERVER_CONFIG_DIR = os.path.join(RESULT_DIR, 'server')
-CLIENT_CONFIG_DIR = os.path.join(RESULT_DIR, 'client')
-VULNBOX_CONFIG_DIR = os.path.join(RESULT_DIR, 'vulnbox')
-
-SERVER_CRYPTO_DIR = os.path.join(SERVER_CONFIG_DIR, 'crypto')
-
-COMMON_CLIENT_CONFIG = os.path.join(RESOURCES, 'client_common.txt')
-COMMON_SERVER_CONFIG = os.path.join(RESOURCES, 'server_common.txt')
-COMMON_VULNBOX_CONFIG = os.path.join(RESOURCES, 'vulnbox_common.txt')
-
-CA_CERT_NAME = 'ca.crt'
-CA_KEY_NAME = 'ca.key'
-DHPARAM_NAME = 'dh2048.pem'
-
-CA_CERT_PATH = os.path.join(SERVER_CONFIG_DIR, CA_CERT_NAME)
-CA_KEY_PATH = os.path.join(SERVER_CONFIG_DIR, CA_KEY_NAME)
-DHPARAM_PATH = os.path.join(SERVER_CONFIG_DIR, DHPARAM_NAME)
-
-VULNBOX_IFACE_PREFIX = 'vuln'
-VULNBOX_PORT_PREFIX = '310'
-
-TEAM_IFACE_PREFIX = 'team'
-TEAM_PORT_PREFIX = '300'
-
-TEAM_CONFIG_DIR = os.path.join(CLIENT_CONFIG_DIR, 'team{team_num}')
-
-
-def gen_server_config(server_num, server_type, net, mask, iface_prefix, port_prefix):
+def gen_subnet_server_config(
+        server_num,
+        server_type,
+        net,
+        mask,
+        common_config_path,
+        name_template,
+        port_template,
+        iface_template,
+        dump_path_template,
+        static_key):
     key_filename = f'{server_type}_server_{server_num}.key'
     cert_filename = f'{server_type}_server_{server_num}.crt'
 
-    key_path = os.path.join(SERVER_CRYPTO_DIR, key_filename)
-    cert_path = os.path.join(SERVER_CRYPTO_DIR, cert_filename)
-
-    dump_path = os.path.join(SERVER_CONFIG_DIR, f'{server_type}_server_{server_num}.conf')
-    crypto_utils.generate_server_conf(
-        ca_cert_filename=CA_CERT_NAME,
-        ca_cert_path=CA_CERT_PATH,
-        ca_key_path=CA_KEY_PATH,
-        dh_param_filename=DHPARAM_NAME,
+    crypto_utils.generate_subnet_server_conf(
+        static_key=static_key,
+        ca_cert_filename=config.CA_CERT_NAME,
+        ca_cert_path=config.CA_CERT_PATH,
+        ca_key_path=config.CA_KEY_PATH,
+        dh_param_filename=config.DHPARAM_NAME,
         server_cert_filename=cert_filename,
-        server_cert_path=cert_path,
         server_key_filename=key_filename,
-        server_key_path=key_path,
-        common_config_filename=COMMON_SERVER_CONFIG,
+        common_config_path=common_config_path,
         server_num=server_num,
+        name_template=name_template,
+        port_template=port_template,
+        iface_template=iface_template,
         net=net,
         mask=mask,
         serial=0x0C,
-        iface_prefix=iface_prefix,
-        port_prefix=port_prefix,
-        out_path=dump_path,
+        out_path_template=dump_path_template,
     )
 
 
 def initialize(team_count):
-    if os.path.exists(RESULT_DIR):
-        shutil.rmtree(RESULT_DIR)
+    if os.path.exists(config.RESULT_DIR):
+        shutil.rmtree(config.RESULT_DIR)
 
-    os.makedirs(SERVER_CONFIG_DIR)
-    os.makedirs(CLIENT_CONFIG_DIR)
-    os.makedirs(VULNBOX_CONFIG_DIR)
-    os.makedirs(SERVER_CRYPTO_DIR)
+    os.makedirs(config.SERVER_CONFIG_DIR)
+    os.makedirs(config.CLIENT_CONFIG_DIR)
+    os.makedirs(config.VULNBOX_CONFIG_DIR)
+    os.makedirs(config.JURY_CONFIG_DIR)
 
     for team_num in range(1, team_count + 1):
-        os.makedirs(TEAM_CONFIG_DIR.format(team_num=team_num))
+        os.makedirs(config.TEAM_CONFIG_DIR.format(team_num=team_num))
 
 
-def main(team_count, per_team, vpn_server):
-    dump_file = open(DHPARAM_PATH, 'w')
+def generate(team_count, per_team, vpn_server):
+    dump_file = open(config.DHPARAM_PATH, 'w')
+
+    # server DH parameters, needs to be awaited
     dhparams_gen_proc = crypto_utils.start_dhparams_gen(dump_file)
 
+    # server crypto parameters
     ca_cert, ca_key = crypto_utils.create_ca(CN='ctforces.com')
     ca_cert_dump = crypto_utils.dump_file_in_mem(ca_cert).decode()
     ca_key_dump = crypto_utils.dump_file_in_mem(ca_key).decode()
 
-    with open(CA_CERT_PATH, 'w') as f:
+    with open(config.CA_CERT_PATH, 'w') as f:
         f.write(ca_cert_dump)
 
-    with open(CA_KEY_PATH, 'w') as f:
+    with open(config.CA_KEY_PATH, 'w') as f:
         f.write(ca_key_dump)
 
     for team_num in range(1, team_count + 1):
+        team_static_key = crypto_utils.generate_static_key()
         formatted_num = format_number(team_num)
 
         for person in range(1, per_team + 1):
+            client_name = f'team{formatted_num}_{person}'
             ovpn_dump_path = os.path.join(
-                CLIENT_CONFIG_DIR,
-                TEAM_CONFIG_DIR.format(team_num=team_num),
-                f'team{formatted_num}_{person}.ovpn',
+                config.CLIENT_CONFIG_DIR,
+                config.TEAM_CONFIG_DIR.format(team_num=team_num),
+                f'{client_name}.ovpn',
             )
 
-            crypto_utils.generate_client_ovpn(
-                ca_cert_path=CA_CERT_PATH,
-                ca_key_path=CA_KEY_PATH,
+            # team player's ovpn file
+            crypto_utils.generate_subnet_client_ovpn(
+                ca_cert_path=config.CA_CERT_PATH,
+                ca_key_path=config.CA_KEY_PATH,
                 client_num=formatted_num,
+                client_name=client_name,
                 server_host=vpn_server,
                 serial=0x0C,
-                common_config_filename=COMMON_CLIENT_CONFIG,
-                client_type=TEAM_IFACE_PREFIX,
-                port_prefix=TEAM_PORT_PREFIX,
+                common_config_filename=config.COMMON_CLIENT_CONFIG,
+                server_port_template=config.TEAM_PORT_TEMPLATE,
                 out_path=ovpn_dump_path,
+                static_key=team_static_key,
             )
 
-        ovpn_dump_path = os.path.join(VULNBOX_CONFIG_DIR, f'vuln_{formatted_num}.ovpn')
-        crypto_utils.generate_client_ovpn(
-            ca_cert_path=CA_CERT_PATH,
-            ca_key_path=CA_KEY_PATH,
-            client_num=formatted_num,
-            server_host=vpn_server,
-            serial=0x0C,
-            common_config_filename=COMMON_VULNBOX_CONFIG,
-            client_type=VULNBOX_IFACE_PREFIX,
-            port_prefix=VULNBOX_PORT_PREFIX,
-            out_path=ovpn_dump_path,
-        )
-
-        gen_server_config(
+        # team main vpn server config
+        gen_subnet_server_config(
             server_num=formatted_num,
             server_type='team',
             net=60,
             mask='255.255.255.0',
-            iface_prefix=TEAM_IFACE_PREFIX,
-            port_prefix=TEAM_PORT_PREFIX,
+            iface_template=config.TEAM_IFACE_TEMPLATE,
+            port_template=config.TEAM_PORT_TEMPLATE,
+            static_key=team_static_key,
+            common_config_path=config.COMMON_TEAM_SERVER_CONFIG,
+            dump_path_template=config.TEAM_SERVER_DUMP_PATH_TEMPLATE,
+            name_template=config.TEAM_SERVER_NAME_TEMPLATE,
         )
 
-        gen_server_config(
+        ovpn_dump_path = os.path.join(config.VULNBOX_CONFIG_DIR, f'vuln_{formatted_num}.ovpn')
+        vulnbox_static_key = crypto_utils.generate_static_key()
+
+        # team vulnbox ovpn
+        crypto_utils.generate_p2p_client_ovpn(
+            static_key=vulnbox_static_key,
+            client_num=formatted_num,
+            server_host=vpn_server,
+            common_config_filename=config.COMMON_VULNBOX_CONFIG,
+            server_port_template=config.VULNBOX_PORT_TEMPLATE,
+            net=config.VULNBOX_SUBNET,
+            out_path=ovpn_dump_path,
+        )
+
+        # team vulnbox p2p server
+        crypto_utils.generate_p2p_server_conf(
+            static_key=vulnbox_static_key,
+            common_config_path=config.COMMON_VULNBOX_SERVER_CONFIG,
+            iface_template=config.VULNBOX_IFACE_TEMPLATE,
+            port_template=config.VULNBOX_PORT_TEMPLATE,
+            net=config.VULNBOX_SUBNET,
             server_num=formatted_num,
-            server_type='vulnbox',
-            net=70,
-            mask='255.255.255.254',
-            iface_prefix=VULNBOX_IFACE_PREFIX,
-            port_prefix=VULNBOX_PORT_PREFIX,
+            out_path_template=config.VULNBOX_SERVER_DUMP_PATH_TEMPLATE,
         )
 
+    jury_static_key = crypto_utils.generate_static_key()
+    ovpn_dump_path = os.path.join(config.JURY_CONFIG_DIR, f'config.ovpn')
+
+    # jury client ovpn
+    crypto_utils.generate_p2p_client_ovpn(
+        static_key=jury_static_key,
+        client_num='10',
+        server_host=vpn_server,
+        common_config_filename=config.COMMON_JURY_CONFIG,
+        server_port_template=config.JURY_PORT_TEMPLATE,
+        net=config.JURY_SUBNET,
+        out_path=ovpn_dump_path,
+    )
+
+    # jury server config
+    crypto_utils.generate_p2p_server_conf(
+        static_key=jury_static_key,
+        common_config_path=config.COMMON_JURY_SERVER_CONFIG,
+        iface_template=config.JURY_IFACE_TEMPLATE,
+        port_template=config.JURY_PORT_TEMPLATE,
+        net=config.JURY_SUBNET,
+        server_num='10',
+        out_path_template=config.JURY_SERVER_DUMP_PATH_TEMPLATE,
+    )
+
+    print('Waiting for dhparam, that could take a minute...')
     dhparams_gen_proc.wait()
     dump_file.close()
 
@@ -158,5 +175,5 @@ if __name__ == "__main__":
     parser.add_argument('--per-team', type=int, default=2, metavar='N', help='Number of configs per team')
     args = parser.parse_args()
     initialize(team_count=args.teams)
-    main(team_count=args.teams, per_team=args.per_team, vpn_server=args.server)
+    generate(team_count=args.teams, per_team=args.per_team, vpn_server=args.server)
     print(f"Done generating config for {args.teams} teams")

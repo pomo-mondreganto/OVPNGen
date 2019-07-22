@@ -1,0 +1,23 @@
+mode p2p
+
+port {port}
+
+dev {iface}
+dev-type tun
+
+ifconfig 10.{net}.{server_num}.1 10.{net}.{server_num}.10
+
+keepalive 10 60
+
+ping-timer-rem
+
+persist-tun
+persist-key
+
+tun-mtu 1500
+fragment 1300
+mssfix
+
+<secret>
+{static_key}
+</secret>

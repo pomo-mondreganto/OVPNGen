@@ -54,7 +54,7 @@ def create_ca(CN, hash_algorithm='sha256WithRSAEncryption', *args):
     return ca_cert, ca_key
 
 
-def create_slave_certificate(csr, ca_key, ca_cert, serial, hash_algorithm='sha256WithRSAEncryption'):
+def create_slave_certificate(csr, ca_key, ca_cert, serial, is_server=False, hash_algorithm='sha256WithRSAEncryption'):
     cert = crypto.X509()
     cert.set_serial_number(serial)
     cert.gmtime_adj_notBefore(0)
@@ -74,6 +74,12 @@ def create_slave_certificate(csr, ca_key, ca_cert, serial, hash_algorithm='sha25
             issuer=ca_cert,
         ),
     ]
+
+    if is_server:
+        extensions.extend([
+            crypto.X509Extension(b'keyUsage', False, b'digitalSignature,keyEncipherment'),
+            crypto.X509Extension(b'extendedKeyUsage', False, b'serverAuth'),
+        ])
 
     cert.add_extensions(extensions)
     # noinspection PyTypeChecker
@@ -129,20 +135,13 @@ def start_dhparams_gen(dump_file):
     return p
 
 
-def dump_ovpn(common, key, cert, ca_cert, path):
-    client_key = dump_file_in_mem(key).decode()
-    client_cert = dump_file_in_mem(cert).decode()
-    ca_cert_dump = dump_file_in_mem(ca_cert).decode()
-
-    ovpn = (
-        f"{common}\n"
-        f"<ca>\n{ca_cert_dump}</ca>\n"
-        f"<cert>\n{client_cert}</cert>\n"
-        f"<key>\n{client_key}</key>\n"
+def generate_static_key():
+    p = subprocess.Popen(
+        ['openvpn', '--genkey', '--secret', '/dev/stdout'],
+        stdout=subprocess.PIPE,
     )
-
-    with open(path, 'w') as f:
-        f.write(ovpn)
+    stdout, _ = p.communicate()
+    return stdout.decode().strip('\n')
 
 
 def dump_object(obj, path):
@@ -150,29 +149,39 @@ def dump_object(obj, path):
         f.write(dump_file_in_mem(obj).decode())
 
 
-def generate_server_conf(
+def generate_subnet_server_conf(
+        static_key,
         ca_cert_filename,
         ca_cert_path,
         ca_key_path,
         dh_param_filename,
         server_cert_filename,
-        server_cert_path,
         server_key_filename,
-        server_key_path,
         server_num,
-        port_prefix,
-        iface_prefix,
+        name_template,
+        port_template,
+        iface_template,
         serial,
         net,
-        common_config_filename,
-        out_path,
+        common_config_path,
+        out_path_template,
         mask):
-    with open(common_config_filename, 'r') as f:
+    with open(common_config_path, 'r') as f:
         common = f.read()
 
-    server_name = f'{iface_prefix}_server_{server_num}'
-    port = f'{port_prefix}{server_num}'
-    iface = f'{iface_prefix}{server_num.lstrip("0")}'
+    server_name = name_template.format(num=server_num)
+    port = port_template.format(num=server_num)
+    iface = iface_template.format(num=server_num.lstrip("0"))
+
+    ca_cert = load_cert_file(ca_cert_path)
+    ca_key = load_key_file(ca_key_path)
+
+    key = make_key_pair()
+    csr = make_csr(key, server_name)
+    cert = create_slave_certificate(csr, ca_key, ca_cert, serial, is_server=True)
+
+    dumped_key = dump_file_in_mem(key).decode().strip('\n')
+    dumped_cert = dump_file_in_mem(cert).decode().strip('\n')
 
     common = common.format(
         iface=iface,
@@ -184,38 +193,58 @@ def generate_server_conf(
         net=net,
         server_num=server_num.lstrip('0'),
         mask=mask,
+        cert=dumped_cert,
+        key=dumped_key,
+        tls_auth=static_key,
     )
 
-    ca_cert = load_cert_file(ca_cert_path)
-    ca_key = load_key_file(ca_key_path)
-
-    key = make_key_pair()
-    csr = make_csr(key, server_name)
-    cert = create_slave_certificate(csr, ca_key, ca_cert, serial)
-
-    dump_object(key, server_key_path)
-    dump_object(cert, server_cert_path)
-
+    out_path = out_path_template.format(num=server_num)
     with open(out_path, 'w') as f:
         f.write(common)
 
 
-def generate_client_ovpn(
+def generate_p2p_server_conf(
+        static_key,
+        common_config_path,
+        iface_template,
+        port_template,
+        net,
+        server_num,
+        out_path_template):
+    with open(common_config_path, 'r') as f:
+        common = f.read()
+
+    port = port_template.format(num=server_num)
+    iface = iface_template.format(num=server_num.lstrip('0'))
+
+    common = common.format(
+        iface=iface,
+        port=port,
+        net=net,
+        server_num=server_num.lstrip('0'),
+        static_key=static_key,
+    )
+
+    out_path = out_path_template.format(num=server_num)
+    with open(out_path, 'w') as f:
+        f.write(common)
+
+
+def generate_subnet_client_ovpn(
+        static_key,
         ca_cert_path,
         ca_key_path,
         client_num,
+        client_name,
         server_host,
         serial,
         common_config_filename,
-        client_type,
-        port_prefix,
+        server_port_template,
         out_path):
     with open(common_config_filename, 'r') as f:
         common = f.read()
 
-    client_name = f'{client_type}{client_num}'
-    server_port = f'{port_prefix}{client_num}'
-    common = common.format(server_host=server_host, server_port=server_port)
+    server_port = server_port_template.format(num=client_num)
 
     ca_cert = load_cert_file(ca_cert_path)
     ca_key = load_key_file(ca_key_path)
@@ -224,4 +253,42 @@ def generate_client_ovpn(
     csr = make_csr(key, client_name)
     cert = create_slave_certificate(csr, ca_key, ca_cert, serial)
 
-    dump_ovpn(common, key, cert, ca_cert, out_path)
+    ca_cert_dump = dump_file_in_mem(ca_cert).decode().strip('\n')
+    client_cert = dump_file_in_mem(cert).decode().strip('\n')
+    client_key = dump_file_in_mem(key).decode().strip('\n')
+
+    common = common.format(
+        server_host=server_host,
+        server_port=server_port,
+        ca_cert_dump=ca_cert_dump,
+        client_cert=client_cert,
+        client_key=client_key,
+        tls_auth=static_key,
+    )
+
+    with open(out_path, 'w') as f:
+        f.write(common)
+
+
+def generate_p2p_client_ovpn(
+        static_key,
+        client_num,
+        server_host,
+        common_config_filename,
+        server_port_template,
+        net,
+        out_path):
+    with open(common_config_filename, 'r') as f:
+        common = f.read()
+
+    server_port = server_port_template.format(num=client_num)
+    common = common.format(
+        server_host=server_host,
+        server_port=server_port,
+        net=net,
+        client_num=client_num.lstrip('0'),
+        static_key=static_key,
+    )
+
+    with open(out_path, 'w') as f:
+        f.write(common)

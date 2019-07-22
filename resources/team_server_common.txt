@@ -1,0 +1,40 @@
+topology subnet
+
+dev {iface}
+dev-type tun
+
+port {port}
+proto udp
+
+ca {ca_cert_filename}
+dh {dh_param_filename}
+
+cipher AES-128-CBC
+
+user nobody
+group nogroup
+persist-key
+persist-tun
+
+keepalive 10 120
+
+tls-server
+key-direction 0
+
+mode server
+push "topology subnet"
+push "route-gateway 10.{net}.{server_num}.1"
+ifconfig 10.{net}.{server_num}.1 255.255.255.0
+ifconfig-pool 10.{net}.{server_num}.3 10.{net}.{server_num}.253
+
+<cert>
+{cert}
+</cert>
+
+<key>
+{key}
+</key>
+
+<tls-auth>
+{tls_auth}
+</tls-auth>
