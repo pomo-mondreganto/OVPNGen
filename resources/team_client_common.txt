@@ -2,6 +2,7 @@ client
 
 dev game
 dev-type tun
+proto udp
 
 remote {server_host} {server_port}
 nobind

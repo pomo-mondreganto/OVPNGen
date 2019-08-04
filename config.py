@@ -9,7 +9,7 @@ CLIENT_CONFIG_DIR = os.path.join(RESULT_DIR, 'client')
 VULNBOX_CONFIG_DIR = os.path.join(RESULT_DIR, 'vulnbox')
 JURY_CONFIG_DIR = os.path.join(RESULT_DIR, 'jury')
 
-COMMON_CLIENT_CONFIG = os.path.join(RESOURCES, 'client_common.txt')
+COMMON_CLIENT_CONFIG = os.path.join(RESOURCES, 'team_client_common.txt')
 COMMON_VULNBOX_CONFIG = os.path.join(RESOURCES, 'vulnbox_common.txt')
 COMMON_JURY_CONFIG = os.path.join(RESOURCES, 'jury_client_common.txt')
 
