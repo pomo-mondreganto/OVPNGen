@@ -21,6 +21,8 @@ keepalive 10 120
 tls-server
 key-direction 0
 
+client-to-client
+
 mode server
 push "topology subnet"
 push "route 10.60.0.0 255.255.0.0"
