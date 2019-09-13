@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
+import argparse
 import os
 import shutil
-import crypto_utils
-import argparse
 
-from auxiliary import format_number
 import config
+import crypto_utils
+from auxiliary import format_number
 
 
 def gen_subnet_server_config(
@@ -113,7 +113,7 @@ def generate(team_count, per_team, vpn_server):
             name_template=config.TEAM_SERVER_NAME_TEMPLATE,
         )
 
-        ovpn_dump_path = os.path.join(config.VULNBOX_CONFIG_DIR, f'vuln_{formatted_num}.ovpn')
+        ovpn_dump_path = os.path.join(config.VULNBOX_CONFIG_DIR, f'vuln{team_num}.ovpn')
         vulnbox_static_key = crypto_utils.generate_static_key()
 
         # team vulnbox ovpn
