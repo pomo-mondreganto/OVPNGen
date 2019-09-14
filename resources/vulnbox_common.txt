@@ -4,6 +4,12 @@ dev game
 dev-type tun
 proto udp
 
+txqueuelen 1000
+fragment 0
+mssfix 0
+tun-mtu 6000
+cipher bf-cbc
+
 remote {server_host} {server_port}
 
 ifconfig 10.{net}.{client_num}.2 10.{net}.{client_num}.1
