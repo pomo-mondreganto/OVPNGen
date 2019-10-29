@@ -4,9 +4,9 @@ import argparse
 import os
 import shutil
 
-import config
-import crypto_utils
-from auxiliary import format_number
+from . import config
+from . import crypto_utils
+from .auxiliary import format_number
 
 
 def gen_subnet_server_config(
