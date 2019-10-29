@@ -168,12 +168,16 @@ def generate(team_count, per_team, vpn_server):
     dump_file.close()
 
 
+def run(team_count, per_team, vpn_server):
+    initialize(team_count=team_count)
+    generate(team_count=team_count, per_team=per_team, vpn_server=vpn_server)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate openvpn configuration for AD CTFs')
     parser.add_argument('--teams', '-t', type=int, metavar='N', help='Team count', required=True)
     parser.add_argument('--server', '-s', type=str, help='Openvpn server host', required=True)
     parser.add_argument('--per-team', type=int, default=2, metavar='N', help='Number of configs per team')
     args = parser.parse_args()
-    initialize(team_count=args.teams)
-    generate(team_count=args.teams, per_team=args.per_team, vpn_server=args.server)
+    run(team_count=args.teams, per_team=args.per_team, vpn_server=args.server)
     print(f"Done generating config for {args.teams} teams")
