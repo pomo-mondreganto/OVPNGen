@@ -2,8 +2,8 @@
 
 import argparse
 import os
-import shutil
 import re
+import shutil
 
 from . import config
 from . import crypto_utils
@@ -44,7 +44,7 @@ def gen_subnet_server_config(
     )
 
 
-def initialize(team_range):
+def initialize(team_list):
     if os.path.exists(config.RESULT_DIR):
         shutil.rmtree(config.RESULT_DIR)
 
@@ -53,11 +53,11 @@ def initialize(team_range):
     os.makedirs(config.VULNBOX_CONFIG_DIR)
     os.makedirs(config.JURY_CONFIG_DIR)
 
-    for team_num in team_range:
+    for team_num in team_list:
         os.makedirs(config.TEAM_CONFIG_DIR.format(team_num=team_num))
 
 
-def generate(team_range, per_team, vpn_server):
+def generate(team_list, per_team, vpn_server):
     dump_file = open(config.DHPARAM_PATH, 'w')
 
     # server DH parameters, needs to be awaited
@@ -74,7 +74,7 @@ def generate(team_range, per_team, vpn_server):
     with open(config.CA_KEY_PATH, 'w') as f:
         f.write(ca_key_dump)
 
-    for team_num in team_range:
+    for team_num in team_list:
         team_static_key = crypto_utils.generate_static_key()
         formatted_num = format_number(team_num)
 
@@ -169,9 +169,9 @@ def generate(team_range, per_team, vpn_server):
     dump_file.close()
 
 
-def run(team_range, per_team, vpn_server):
-    initialize(team_range=team_range)
-    generate(team_range=team_range, per_team=per_team, vpn_server=vpn_server)
+def run(team_list, per_team, vpn_server):
+    initialize(team_list=team_list)
+    generate(team_list=team_list, per_team=per_team, vpn_server=vpn_server)
 
 
 if __name__ == "__main__":
@@ -180,16 +180,23 @@ if __name__ == "__main__":
     parser.add_argument('--per-team', type=int, default=2, metavar='N', help='Number of configs per team')
 
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--teams', '-t', type=int, metavar='N', help='Team count', required=True)
-    group.add_argument('--range', '-t', type=str, metavar='N-N', help='Range of teams (inclusive)', required=True)
+    group.add_argument('--teams', '-t', type=int, metavar='N', help='Team count')
+    group.add_argument('--range', type=str, metavar='N-N', help='Range of teams (inclusive)')
+    group.add_argument('--list', type=str, metavar='N,N,...', help='List of teams')
 
     args = parser.parse_args()
 
     if args.teams:
-        t_range = range(1, args.teams + 1)
-    else:
-        borders = re.search(r"(\d+)-(\d+)", args.range)
-        t_range = range(*borders)
+        teams = range(1, args.teams + 1)
+    elif args.range:
+        match = re.search(r"(\d+)-(\d+)", args.range)
+        if not match:
+            print('Invalid range')
+            exit(1)
 
-    run(team_range=t_range, per_team=args.per_team, vpn_server=args.server)
-    print(f"Done generating config for {args.teams} teams")
+        teams = range(int(match.group(1)), int(match.group(2)) + 1)
+    else:
+        teams = list(map(int, args.list.split(',')))
+
+    run(team_list=teams, per_team=args.per_team, vpn_server=args.server)
+    print(f"Done generating config for {len(teams)} teams")
