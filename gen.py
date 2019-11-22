@@ -57,7 +57,7 @@ def initialize(team_list):
         os.makedirs(config.TEAM_CONFIG_DIR.format(team_num=team_num))
 
 
-def generate(team_list, per_team, vpn_server):
+def generate(team_list, per_team, vpn_server, gen_jury):
     dump_file = open(config.DHPARAM_PATH, 'w')
 
     # server DH parameters, needs to be awaited
@@ -139,45 +139,47 @@ def generate(team_list, per_team, vpn_server):
             out_path_template=config.VULNBOX_SERVER_DUMP_PATH_TEMPLATE,
         )
 
-    jury_static_key = crypto_utils.generate_static_key()
-    ovpn_dump_path = os.path.join(config.JURY_CONFIG_DIR, f'config.ovpn')
+    if gen_jury:
+        jury_static_key = crypto_utils.generate_static_key()
+        ovpn_dump_path = os.path.join(config.JURY_CONFIG_DIR, f'config.ovpn')
 
-    # jury client ovpn
-    crypto_utils.generate_p2p_client_ovpn(
-        static_key=jury_static_key,
-        client_num='10',
-        server_host=vpn_server,
-        common_config_filename=config.COMMON_JURY_CONFIG,
-        server_port_template=config.JURY_PORT_TEMPLATE,
-        net=config.JURY_SUBNET,
-        out_path=ovpn_dump_path,
-    )
+        # jury client ovpn
+        crypto_utils.generate_p2p_client_ovpn(
+            static_key=jury_static_key,
+            client_num='10',
+            server_host=vpn_server,
+            common_config_filename=config.COMMON_JURY_CONFIG,
+            server_port_template=config.JURY_PORT_TEMPLATE,
+            net=config.JURY_SUBNET,
+            out_path=ovpn_dump_path,
+        )
 
-    # jury server config
-    crypto_utils.generate_p2p_server_conf(
-        static_key=jury_static_key,
-        common_config_path=config.COMMON_JURY_SERVER_CONFIG,
-        iface_template=config.JURY_IFACE_TEMPLATE,
-        port_template=config.JURY_PORT_TEMPLATE,
-        net=config.JURY_SUBNET,
-        server_num='10',
-        out_path_template=config.JURY_SERVER_DUMP_PATH_TEMPLATE,
-    )
+        # jury server config
+        crypto_utils.generate_p2p_server_conf(
+            static_key=jury_static_key,
+            common_config_path=config.COMMON_JURY_SERVER_CONFIG,
+            iface_template=config.JURY_IFACE_TEMPLATE,
+            port_template=config.JURY_PORT_TEMPLATE,
+            net=config.JURY_SUBNET,
+            server_num='10',
+            out_path_template=config.JURY_SERVER_DUMP_PATH_TEMPLATE,
+        )
 
     print('Waiting for dhparam, that could take a minute...')
     dhparams_gen_proc.wait()
     dump_file.close()
 
 
-def run(team_list, per_team, vpn_server):
+def run(team_list, per_team, vpn_server, gen_jury):
     initialize(team_list=team_list)
-    generate(team_list=team_list, per_team=per_team, vpn_server=vpn_server)
+    generate(team_list=team_list, per_team=per_team, vpn_server=vpn_server, gen_jury=gen_jury)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate openvpn configuration for AD CTFs')
     parser.add_argument('--server', '-s', type=str, help='Openvpn server host', required=True)
     parser.add_argument('--per-team', type=int, default=2, metavar='N', help='Number of configs per team')
+    parser.add_argument('--jury', help='Generate config for jury', action='store_true', default=True)
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--teams', '-t', type=int, metavar='N', help='Team count')
@@ -198,5 +200,5 @@ if __name__ == "__main__":
     else:
         teams = list(map(int, args.list.split(',')))
 
-    run(team_list=teams, per_team=args.per_team, vpn_server=args.server)
+    run(team_list=teams, per_team=args.per_team, vpn_server=args.server, gen_jury=args.jury)
     print(f"Done generating config for {len(teams)} teams")
