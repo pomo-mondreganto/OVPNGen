@@ -5,9 +5,14 @@ import os
 import re
 import shutil
 
-from . import config
-from . import crypto_utils
-from .auxiliary import format_number
+if __name__ == '__main__':
+    import config
+    import crypto_utils
+    from auxiliary import format_number
+else:
+    from . import config
+    from . import crypto_utils
+    from .auxiliary import format_number
 
 
 def gen_subnet_server_config(
@@ -179,7 +184,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate openvpn configuration for AD CTFs')
     parser.add_argument('--server', '-s', type=str, help='Openvpn server host', required=True)
     parser.add_argument('--per-team', type=int, default=2, metavar='N', help='Number of configs per team')
-    parser.add_argument('--jury', help='Generate config for jury', action='store_true', default=True)
+    parser.add_argument('--jury', help='Generate config for jury', action='store_true')
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--teams', '-t', type=int, metavar='N', help='Team count')
