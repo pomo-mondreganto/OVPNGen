@@ -62,7 +62,7 @@ def initialize(team_list):
         os.makedirs(config.TEAM_CONFIG_DIR.format(team_num=team_num))
 
 
-def generate(team_list, per_team, vpn_server, gen_jury):
+def generate(team_list, per_team, vpn_server, gen_jury, gen_vuln):
     dump_file = open(config.DHPARAM_PATH, 'w')
 
     # server DH parameters, needs to be awaited
@@ -119,30 +119,31 @@ def generate(team_list, per_team, vpn_server, gen_jury):
             name_template=config.TEAM_SERVER_NAME_TEMPLATE,
         )
 
-        ovpn_dump_path = os.path.join(config.VULNBOX_CONFIG_DIR, f'vuln{team_num}.ovpn')
-        vulnbox_static_key = crypto_utils.generate_static_key()
+        if gen_vuln:
+            ovpn_dump_path = os.path.join(config.VULNBOX_CONFIG_DIR, f'vuln{team_num}.ovpn')
+            vulnbox_static_key = crypto_utils.generate_static_key()
 
-        # team vulnbox ovpn
-        crypto_utils.generate_p2p_client_ovpn(
-            static_key=vulnbox_static_key,
-            client_num=formatted_num,
-            server_host=vpn_server,
-            common_config_filename=config.COMMON_VULNBOX_CONFIG,
-            server_port_template=config.VULNBOX_PORT_TEMPLATE,
-            net=config.VULNBOX_SUBNET,
-            out_path=ovpn_dump_path,
-        )
+            # team vulnbox ovpn
+            crypto_utils.generate_p2p_client_ovpn(
+                static_key=vulnbox_static_key,
+                client_num=formatted_num,
+                server_host=vpn_server,
+                common_config_filename=config.COMMON_VULNBOX_CONFIG,
+                server_port_template=config.VULNBOX_PORT_TEMPLATE,
+                net=config.VULNBOX_SUBNET,
+                out_path=ovpn_dump_path,
+            )
 
-        # team vulnbox p2p server
-        crypto_utils.generate_p2p_server_conf(
-            static_key=vulnbox_static_key,
-            common_config_path=config.COMMON_VULNBOX_SERVER_CONFIG,
-            iface_template=config.VULNBOX_IFACE_TEMPLATE,
-            port_template=config.VULNBOX_PORT_TEMPLATE,
-            net=config.VULNBOX_SUBNET,
-            server_num=formatted_num,
-            out_path_template=config.VULNBOX_SERVER_DUMP_PATH_TEMPLATE,
-        )
+            # team vulnbox p2p server
+            crypto_utils.generate_p2p_server_conf(
+                static_key=vulnbox_static_key,
+                common_config_path=config.COMMON_VULNBOX_SERVER_CONFIG,
+                iface_template=config.VULNBOX_IFACE_TEMPLATE,
+                port_template=config.VULNBOX_PORT_TEMPLATE,
+                net=config.VULNBOX_SUBNET,
+                server_num=formatted_num,
+                out_path_template=config.VULNBOX_SERVER_DUMP_PATH_TEMPLATE,
+            )
 
     if gen_jury:
         jury_static_key = crypto_utils.generate_static_key()
@@ -175,9 +176,9 @@ def generate(team_list, per_team, vpn_server, gen_jury):
     dump_file.close()
 
 
-def run(team_list, per_team, vpn_server, gen_jury):
+def run(team_list, per_team, vpn_server, gen_jury, gen_vuln):
     initialize(team_list=team_list)
-    generate(team_list=team_list, per_team=per_team, vpn_server=vpn_server, gen_jury=gen_jury)
+    generate(team_list=team_list, per_team=per_team, vpn_server=vpn_server, gen_jury=gen_jury, gen_vuln=gen_vuln)
 
 
 if __name__ == "__main__":
@@ -185,6 +186,7 @@ if __name__ == "__main__":
     parser.add_argument('--server', '-s', type=str, help='Openvpn server host', required=True)
     parser.add_argument('--per-team', type=int, default=2, metavar='N', help='Number of configs per team')
     parser.add_argument('--jury', help='Generate config for jury', action='store_true')
+    parser.add_argument('--vuln', help='Generate config for vulnboxes', action='store_true')
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--teams', '-t', type=int, metavar='N', help='Team count')
@@ -205,5 +207,5 @@ if __name__ == "__main__":
     else:
         teams = list(map(int, args.list.split(',')))
 
-    run(team_list=teams, per_team=args.per_team, vpn_server=args.server, gen_jury=args.jury)
+    run(team_list=teams, per_team=args.per_team, vpn_server=args.server, gen_jury=args.jury, gen_vuln=args.vuln)
     print(f"Done generating config for {len(teams)} teams")
