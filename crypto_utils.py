@@ -1,5 +1,8 @@
-from OpenSSL import crypto
 import subprocess
+
+from OpenSSL import crypto
+
+from .auxiliary import strip_zeros
 
 
 def make_key_pair(algorithm=crypto.TYPE_RSA, num_bits=2048):
@@ -171,7 +174,7 @@ def generate_subnet_server_conf(
 
     server_name = name_template.format(num=server_num)
     port = port_template.format(num=server_num)
-    iface = iface_template.format(num=server_num.lstrip("0"))
+    iface = iface_template.format(num=strip_zeros(server_num))
 
     ca_cert = load_cert_file(ca_cert_path)
     ca_key = load_key_file(ca_key_path)
@@ -191,7 +194,7 @@ def generate_subnet_server_conf(
         server_key_filename=server_key_filename,
         dh_param_filename=dh_param_filename,
         net=net,
-        server_num=server_num.lstrip('0'),
+        server_num=strip_zeros(server_num),
         mask=mask,
         cert=dumped_cert,
         key=dumped_key,
@@ -215,13 +218,13 @@ def generate_p2p_server_conf(
         common = f.read()
 
     port = port_template.format(num=server_num)
-    iface = iface_template.format(num=server_num.lstrip('0'))
+    iface = iface_template.format(num=strip_zeros(server_num))
 
     common = common.format(
         iface=iface,
         port=port,
         net=net,
-        server_num=server_num.lstrip('0'),
+        server_num=strip_zeros(server_num),
         static_key=static_key,
     )
 
@@ -286,7 +289,7 @@ def generate_p2p_client_ovpn(
         server_host=server_host,
         server_port=server_port,
         net=net,
-        client_num=client_num.lstrip('0'),
+        client_num=strip_zeros(client_num),
         static_key=static_key,
     )
 
