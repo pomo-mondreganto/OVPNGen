@@ -9,6 +9,10 @@ CLIENT_CONFIG_DIR = os.path.join(RESULT_DIR, 'client')
 VULNBOX_CONFIG_DIR = os.path.join(RESULT_DIR, 'vulnbox')
 JURY_CONFIG_DIR = os.path.join(RESULT_DIR, 'jury')
 
+CLIENT_SERVER_CONFIG_DIR = os.path.join(SERVER_CONFIG_DIR, 'client')
+VULNBOX_SERVER_CONFIG_DIR = os.path.join(SERVER_CONFIG_DIR, 'vulnbox')
+JURY_SERVER_CONFIG_DIR = os.path.join(SERVER_CONFIG_DIR, 'jury')
+
 COMMON_CLIENT_CONFIG = os.path.join(RESOURCES, 'team_client_common.txt')
 COMMON_VULNBOX_CONFIG = os.path.join(RESOURCES, 'vulnbox_common.txt')
 COMMON_JURY_CONFIG = os.path.join(RESOURCES, 'jury_client_common.txt')
@@ -38,17 +42,17 @@ TEAM_SERVER_NAME_TEMPLATE = 'team_server_{num}'
 VULNBOX_SERVER_NAME_TEMPLATE = 'vulnbox_server_{num}'
 
 TEAM_SERVER_DUMP_PATH_TEMPLATE = os.path.join(
-    SERVER_CONFIG_DIR,
+    CLIENT_SERVER_CONFIG_DIR,
     f'{TEAM_SERVER_NAME_TEMPLATE}.conf',
 )
 
 VULNBOX_SERVER_DUMP_PATH_TEMPLATE = os.path.join(
-    SERVER_CONFIG_DIR,
+    VULNBOX_SERVER_CONFIG_DIR,
     f'{VULNBOX_SERVER_NAME_TEMPLATE}.conf',
 )
 
 JURY_SERVER_DUMP_PATH_TEMPLATE = os.path.join(
-    SERVER_CONFIG_DIR,
+    JURY_SERVER_CONFIG_DIR,
     'jury.conf',
 )
 

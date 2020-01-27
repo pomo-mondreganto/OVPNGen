@@ -2,7 +2,9 @@ import subprocess
 
 from OpenSSL import crypto
 
-from .auxiliary import strip_zeros
+
+def strip_zeros(formatted_num):
+    return formatted_num.lstrip('0').zfill(1)
 
 
 def make_key_pair(algorithm=crypto.TYPE_RSA, num_bits=2048):
