@@ -1,4 +1,4 @@
-NUM_LEN = 2
+NUM_LEN = 3
 
 
 def format_number(num):
