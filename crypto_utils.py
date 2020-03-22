@@ -136,7 +136,8 @@ def load_cert_file(path):
 
 
 def start_dhparams_gen(dump_file):
-    p = subprocess.Popen(['openssl', 'dhparam', '2048'], stderr=subprocess.PIPE, stdout=dump_file)
+    dhparam_url = 'https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem'
+    p = subprocess.Popen(['curl', dhparam_url], stderr=subprocess.PIPE, stdout=dump_file)
     return p
 
 
