@@ -55,12 +55,12 @@ class ConfigGenerator:
             f.write(rendered)
 
     @staticmethod
-    def _format_team_num(team_num):
+    def format_team_num(team_num):
         return str(team_num).zfill(3)
 
     def _generate_team(self, team_num, per_team):
         static_key = crypto_utils.generate_static_key()
-        formatted_team = self._format_team_num(team_num)
+        formatted_team = self.format_team_num(team_num)
 
         team_client_dir = os.path.join(config.TEAM_CLIENT_DIR, f'team{formatted_team}')
         os.makedirs(team_client_dir, exist_ok=True)
@@ -89,7 +89,7 @@ class ConfigGenerator:
         self._dump_file(rendered, conf_dump_path)
 
     def _generate_vuln(self, team_num):
-        formatted_team = self._format_team_num(team_num)
+        formatted_team = self.format_team_num(team_num)
         static_key = crypto_utils.generate_static_key()
         rendered = self._get_rendered(
             template='vuln_client.j2',

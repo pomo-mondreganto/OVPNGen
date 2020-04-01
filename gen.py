@@ -4,13 +4,14 @@ import argparse
 import os
 import re
 import shutil
+import sys
 
-if __name__ == '__main__':
-    import config
-    import generator
-else:
-    from . import generator
-    from . import config
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import config
+import generator
+
+sys.path = sys.path[1:]
 
 
 def initialize():
