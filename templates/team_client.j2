@@ -4,7 +4,7 @@ dev game
 dev-type tun
 proto udp
 
-remote {server_host} {server_port}
+remote {{ server_host }} {{ config.TEAM_PORT + team_num }}
 nobind
 
 dev tun
@@ -21,17 +21,17 @@ key-direction 1
 pull
 
 <ca>
-{ca_cert_dump}
+{{ ca_cert }}
 </ca>
 
 <cert>
-{client_cert}
+{{ cert }}
 </cert>
 
 <key>
-{client_key}
+{{ key }}
 </key>
 
 <tls-auth>
-{tls_auth}
+{{ static_key }}
 </tls-auth>

@@ -10,19 +10,19 @@ mssfix 0
 tun-mtu 6000
 cipher bf-cbc
 
-remote {server_host} {server_port}
+remote {{ server_host }} {{ config.JURY_PORT }}
 
 ifconfig 10.10.10.10 10.10.10.1
 
-route 10.60.0.0 255.255.0.0
-route 10.70.0.0 255.255.0.0
+route 10.60.0.0 255.252.0.0
+route 10.80.0.0 255.252.0.0
 route 10.10.10.0 255.255.255.0
 
-keepalive 10 30
+keepalive 10 60
 
 nobind
 verb 3
 
 <secret>
-{static_key}
+{{ static_key }}
 </secret>

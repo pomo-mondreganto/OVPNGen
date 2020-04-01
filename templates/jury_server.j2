@@ -1,8 +1,8 @@
 mode p2p
 
-port {port}
+port {{ config.JURY_PORT }}
 
-dev {iface}
+dev jury
 dev-type tun
 proto udp
 
@@ -12,7 +12,7 @@ mssfix 0
 tun-mtu 6000
 cipher bf-cbc
 
-ifconfig 10.{net}.{server_num}.1 10.{net}.{server_num}.2
+ifconfig 10.10.10.1 10.10.10.10
 
 keepalive 10 60
 
@@ -22,5 +22,5 @@ persist-tun
 persist-key
 
 <secret>
-{static_key}
+{{ static_key }}
 </secret>
