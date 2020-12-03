@@ -4,7 +4,7 @@ port {{ config.JURY_PORT }}
 
 dev jury
 dev-type tun
-proto udp
+proto {{ 'udp' if config.PROTOCOL == 'udp' else 'tcp-server'}}
 
 txqueuelen 1000
 fragment 0
