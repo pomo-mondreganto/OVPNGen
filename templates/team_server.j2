@@ -4,7 +4,7 @@ dev team{{ team_num }}
 dev-type tun
 
 port {{ config.TEAM_PORT + team_num }}
-proto udp
+proto {{ 'udp' if config.PROTOCOL == 'udp' else 'tcp-server'}} 
 
 cipher AES-128-CBC
 

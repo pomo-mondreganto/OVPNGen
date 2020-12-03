@@ -4,7 +4,7 @@ port {{ config.VULN_PORT + team_num }}
 
 dev vuln{{ team_num }}
 dev-type tun
-proto udp
+proto {{ 'udp' if config.PROTOCOL == 'udp' else 'tcp-server'}} 
 
 txqueuelen 1000
 fragment 0
